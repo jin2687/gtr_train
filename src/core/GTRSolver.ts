@@ -10,49 +10,46 @@ import {
 /**
  * Left GTR success condition:
  *
- * Judgment area: columns 0-1, rows 0-2 (bottom-left 2x3)
+ * Judgment area: columns 0-1, rows 0-2 (bottom-left)
  *
  *   col0  col1
  *  +----+----+
- *  | A  | A  |  row 2
- *  | A  | A  |  row 1
- *  | A  | B  |  row 0
+ *  | A  |    |  row 2   ← L-shape top
+ *  | A  | A  |  row 1   ← L-shape bottom
+ *  | B  | B  |  row 0   ← zabuton (cushion)
  *  +----+----+
  *
- * - Column 0 (x=0): bottom 3 cells are same color A
- * - Column 1 (x=1): bottom cell is color B (zabuton), top 2 are color A
+ * - L-shape color A: col0 rows 1-2, col1 row 1 (3 connected)
+ * - Zabuton color B: col0 row 0, col1 row 0 (2 connected)
  * - A ≠ B
  */
 export function checkLeftGTR(board: PuyoBoard): boolean {
-  const a0 = board.getCell(0, 0)
-  const a1 = board.getCell(0, 1)
-  const a2 = board.getCell(0, 2)
-  const b0 = board.getCell(1, 0)
-  const b1 = board.getCell(1, 1)
-  const b2 = board.getCell(1, 2)
+  const c00 = board.getCell(0, 0) // col0 row0 = B (zabuton)
+  const c01 = board.getCell(0, 1) // col0 row1 = A (L-shape)
+  const c02 = board.getCell(0, 2) // col0 row2 = A (L-shape top)
+  const c10 = board.getCell(1, 0) // col1 row0 = B (zabuton)
+  const c11 = board.getCell(1, 1) // col1 row1 = A (L-shape)
 
-  // All must be filled
+  // All 5 cells must be filled
   if (
-    a0 === PuyoColor.NONE ||
-    a1 === PuyoColor.NONE ||
-    a2 === PuyoColor.NONE ||
-    b0 === PuyoColor.NONE ||
-    b1 === PuyoColor.NONE ||
-    b2 === PuyoColor.NONE
+    c00 === PuyoColor.NONE ||
+    c01 === PuyoColor.NONE ||
+    c02 === PuyoColor.NONE ||
+    c10 === PuyoColor.NONE ||
+    c11 === PuyoColor.NONE
   ) {
     return false
   }
 
-  const colorA = a0
+  // L-shape color A: col0 rows 1-2 and col1 row 1 must match
+  const colorA = c01
+  if (c02 !== colorA || c11 !== colorA) return false
 
-  // Column 0: all three must be colorA
-  if (a1 !== colorA || a2 !== colorA) return false
+  // Zabuton color B: col0 row 0 and col1 row 0 must match
+  if (c00 !== c10) return false
 
-  // Column 1: bottom is colorB, top two are colorA
-  if (b1 !== colorA || b2 !== colorA) return false
-
-  // colorB (zabuton) must differ from colorA
-  if (b0 === colorA) return false
+  // A ≠ B
+  if (colorA === c00) return false
 
   return true
 }
