@@ -16,7 +16,7 @@ export function Board({ grid, playerGhost, solutionGhost }: BoardProps) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       const key = `${x}-${y}`
       const cellColor = grid[y][x]
-      const isGtrZone = x <= 1 && y <= 2
+      const isGtrZone = (x === 0 && y <= 2) || (x === 1 && y <= 1)
 
       // Check if this cell has a solution ghost
       let isSolutionGhost = false

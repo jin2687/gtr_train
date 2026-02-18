@@ -11,60 +11,70 @@ describe('checkLeftGTR', () => {
 
   it('detects valid left GTR', () => {
     const board = new PuyoBoard()
-    // Column 0: 3x RED (rows 0,1,2)
-    board.grid[0][0] = PuyoColor.RED
-    board.grid[1][0] = PuyoColor.RED
-    board.grid[2][0] = PuyoColor.RED
-    // Column 1: BLUE at row 0, RED at rows 1,2
-    board.grid[0][1] = PuyoColor.BLUE
-    board.grid[1][1] = PuyoColor.RED
-    board.grid[2][1] = PuyoColor.RED
+    // Correct GTR: L-shape (RED) + zabuton (BLUE)
+    //   col0  col1
+    //   [R]         row 2
+    //   [R]   [R]   row 1
+    //   [B]   [B]   row 0
+    board.grid[0][0] = PuyoColor.BLUE   // zabuton
+    board.grid[1][0] = PuyoColor.RED    // L-shape
+    board.grid[2][0] = PuyoColor.RED    // L-shape top
+    board.grid[0][1] = PuyoColor.BLUE   // zabuton
+    board.grid[1][1] = PuyoColor.RED    // L-shape
     expect(checkLeftGTR(board)).toBe(true)
   })
 
-  it('returns false when zabuton is same color as A', () => {
+  it('detects valid GTR with extra puyo on col1 row2', () => {
     const board = new PuyoBoard()
-    board.grid[0][0] = PuyoColor.RED
-    board.grid[1][0] = PuyoColor.RED
-    board.grid[2][0] = PuyoColor.RED
-    // zabuton is also RED = invalid
-    board.grid[0][1] = PuyoColor.RED
-    board.grid[1][1] = PuyoColor.RED
-    board.grid[2][1] = PuyoColor.RED
-    expect(checkLeftGTR(board)).toBe(false)
-  })
-
-  it('returns false when column 0 colors differ', () => {
-    const board = new PuyoBoard()
-    board.grid[0][0] = PuyoColor.RED
-    board.grid[1][0] = PuyoColor.BLUE // wrong
-    board.grid[2][0] = PuyoColor.RED
-    board.grid[0][1] = PuyoColor.GREEN
-    board.grid[1][1] = PuyoColor.RED
-    board.grid[2][1] = PuyoColor.RED
-    expect(checkLeftGTR(board)).toBe(false)
-  })
-
-  it('returns false when column 1 top two differ from column 0', () => {
-    const board = new PuyoBoard()
-    board.grid[0][0] = PuyoColor.RED
+    // GTR is valid even if col1 row2 has a puyo
+    board.grid[0][0] = PuyoColor.BLUE
     board.grid[1][0] = PuyoColor.RED
     board.grid[2][0] = PuyoColor.RED
     board.grid[0][1] = PuyoColor.BLUE
-    board.grid[1][1] = PuyoColor.GREEN // wrong
-    board.grid[2][1] = PuyoColor.RED
+    board.grid[1][1] = PuyoColor.RED
+    board.grid[2][1] = PuyoColor.GREEN  // extra puyo, doesn't break GTR
+    expect(checkLeftGTR(board)).toBe(true)
+  })
+
+  it('returns false when zabuton colors differ', () => {
+    const board = new PuyoBoard()
+    board.grid[0][0] = PuyoColor.BLUE
+    board.grid[1][0] = PuyoColor.RED
+    board.grid[2][0] = PuyoColor.RED
+    board.grid[0][1] = PuyoColor.GREEN  // different from col0 zabuton
+    board.grid[1][1] = PuyoColor.RED
+    expect(checkLeftGTR(board)).toBe(false)
+  })
+
+  it('returns false when zabuton is same color as L-shape', () => {
+    const board = new PuyoBoard()
+    // All same color = A == B
+    board.grid[0][0] = PuyoColor.RED
+    board.grid[1][0] = PuyoColor.RED
+    board.grid[2][0] = PuyoColor.RED
+    board.grid[0][1] = PuyoColor.RED
+    board.grid[1][1] = PuyoColor.RED
+    expect(checkLeftGTR(board)).toBe(false)
+  })
+
+  it('returns false when L-shape colors differ', () => {
+    const board = new PuyoBoard()
+    board.grid[0][0] = PuyoColor.BLUE
+    board.grid[1][0] = PuyoColor.RED
+    board.grid[2][0] = PuyoColor.GREEN  // wrong: should be RED
+    board.grid[0][1] = PuyoColor.BLUE
+    board.grid[1][1] = PuyoColor.RED
     expect(checkLeftGTR(board)).toBe(false)
   })
 })
 
 describe('solveGTR', () => {
-  it('solves a trivial case: 4 same-color pairs + 1 different', () => {
-    // 3 RED pairs vertically on col 0 = 6 REDs, but we only need 5 REDs + 1 other
-    // Actually: we need col0=[A,A,A], col1=[B,A,A] = 5xA + 1xB
-    // Let's use: RR, RR, RB where R placed col0 and B+R placed col1
+  it('solves a trivial case with correct GTR shape', () => {
+    // Correct GTR needs: col0=[B,A,A], col1=[B,A] = 3xA + 2xB
+    // Use: BB pair for zabuton, RR pair for L-shape row 1, R? for col0 row 2
     const tsumos: TsumoPair[] = [
+      { axis: PuyoColor.BLUE, child: PuyoColor.BLUE },
       { axis: PuyoColor.RED, child: PuyoColor.RED },
-      { axis: PuyoColor.RED, child: PuyoColor.BLUE },
       { axis: PuyoColor.RED, child: PuyoColor.RED },
       { axis: PuyoColor.RED, child: PuyoColor.RED },
     ]
@@ -92,12 +102,14 @@ describe('solveGTR', () => {
     expect(result).toBeNull()
   })
 
-  it('solves with specific tsumos and verifies board state', () => {
+  it('solves with specific tsumos and verifies correct GTR shape', () => {
+    // Zabuton (BB) comes first so it can land at the bottom,
+    // then L-shape puyos stack on top
     const tsumos: TsumoPair[] = [
-      { axis: PuyoColor.GREEN, child: PuyoColor.GREEN },
-      { axis: PuyoColor.GREEN, child: PuyoColor.YELLOW },
-      { axis: PuyoColor.GREEN, child: PuyoColor.GREEN },
+      { axis: PuyoColor.BLUE, child: PuyoColor.BLUE },
       { axis: PuyoColor.RED, child: PuyoColor.RED },
+      { axis: PuyoColor.RED, child: PuyoColor.YELLOW },
+      { axis: PuyoColor.YELLOW, child: PuyoColor.YELLOW },
     ]
     const result = solveGTR(tsumos)
     expect(result).not.toBeNull()
@@ -107,6 +119,14 @@ describe('solveGTR', () => {
         board.placePair(tsumos[i], result.placements[i])
       }
       expect(checkLeftGTR(board)).toBe(true)
+      // Verify correct GTR shape:
+      // Zabuton: col0 row0 and col1 row0 same color
+      expect(board.getCell(0, 0)).toBe(board.getCell(1, 0))
+      // L-shape: col0 row1, col0 row2, col1 row1 same color
+      expect(board.getCell(0, 1)).toBe(board.getCell(0, 2))
+      expect(board.getCell(0, 1)).toBe(board.getCell(1, 1))
+      // A ≠ B
+      expect(board.getCell(0, 0)).not.toBe(board.getCell(0, 1))
     }
   })
 })
